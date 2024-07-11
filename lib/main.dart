@@ -1,68 +1,42 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
-void main() {
-  runApp(const MyApp());
-}
+import 'dog_model.dart';
+import 'sqflite_helper.dart';
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
 
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
-    );
-  }
-}
+  final db = SqfliteHelper();
+  await db.initDatabase();
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-  final String title;
+  // 検証1：テーブルからすべてのdogsを取得しても、初期化後すぐなのでテーブルが空であることを確認。
+  print(await db.getDogs());
 
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
+  // 適当なDog（fido）を作成し、テーブルに追加。
+  var fido = Dog(
+    id: 0,
+    name: 'Fido',
+    age: 35,
+  );
+  await db.insertDog(fido);
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+  // 検証2：テーブルからすべてのdogsを取得し、テーブルに追加されたことを確認。
+  print(await db.getDogs());
 
-  void _incrementCounter() {
-    setState(() {
-      _counter++;
-    });
-  }
+  // fido のageを更新し、DBに保存。
+  fido = Dog(
+    id: fido.id,
+    name: fido.name,
+    age: fido.age + 7,
+  );
+  await db.updateDog(fido);
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ),
-    );
-  }
+  // 検証3：テーブルからすべてのdogsを取得し、fidoのageが更新されていることを確認。
+  print(await db.getDogs());
+
+  // fidoをDBから削除。
+  await db.deleteDog(fido.id);
+
+  // 検証4：テーブルからすべてのdogsを取得し、fidoが削除されていることを確認。
+  print(await db.getDogs());
 }
